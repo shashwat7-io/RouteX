@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landslide Risk Detection Engine & Dynamic Routing Dashboard</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Leaflet Heatmap Plugin -->
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="logo-container">
+      <div class="logo-icon-wrapper">
+        <i data-lucide="mountain-snow" class="logo-icon"></i>
+      </div>
+      <div>
+        <h1 class="app-title">TERRA-GUARD AI</h1>
+        <p class="app-subtitle">Landslide Hazard Detection & Autonomous Safe Rerouting System</p>
+      </div>
+    </div>
+    
+    <div class="header-status-group">
+      <div class="status-badge live-api">
+        <span class="pulse-dot green"></span>
+        <span id="api-status-text">Open-Meteo & XGBoost Engine Active</span>
+      </div>
+      <div class="system-time" id="system-clock">21:05:30 UTC</div>
+    </div>
+  </header>
+
+  <!-- Reroute Warning Banner (Hidden by Default) -->
+  <div id="alert-banner" class="alert-banner hidden">
+    <div class="alert-content">
+      <div class="alert-icon-pulse">
+        <i data-lucide="alert-triangle"></i>
+      </div>
+      <div class="alert-text">
+        <h3 id="alert-title">CRITICAL HAZARD DETECTED ALONG ROUTE</h3>
+        <p id="alert-message">High Landslide Hazard Index (LHI > 0.75) detected. Automatic safe route recalculation engaged.</p>
+      </div>
+    </div>
+    <div class="alert-metrics">
+      <div class="metric-pill">
+        <span class="label">Original Route:</span>
+        <span id="alert-orig-dist" class="val blocked">0 km</span>
+      </div>
+      <div class="metric-arrow">➔</div>
+      <div class="metric-pill">
+        <span class="label">Safe Bypass Route:</span>
+        <span id="alert-safe-dist" class="val safe">0 km</span>
+      </div>
+      <div class="metric-pill">
+        <span class="label">ETA Delta:</span>
+        <span id="alert-eta-delta" class="val warning">+0 min</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid Layout -->
+  <main class="dashboard-grid">
+    <!-- Sidebar Control & Telemetry Panel -->
+    <aside class="sidebar-panel">
+      
+      <!-- Preset Region Selector -->
+      <section class="panel-card">
+        <div class="card-header">
+          <i data-lucide="globe"></i>
+          <h2>Geospatial Region Presets</h2>
+        </div>
+        <div class="preset-buttons">
+          <button class="preset-btn active" data-region="himalayas">
+            <span class="region-title">🏔️ Himalayas Highway</span>
+            <span class="region-sub">Rishikesh ➔ Kedarnath Pass</span>
+          </button>
+          <button class="preset-btn" data-region="pacific_nw">
+            <span class="region-title">🌲 Pacific Northwest</span>
+            <span class="region-sub">Seattle ➔ Mt. Rainier Corridor</span>
+          </button>
+          <button class="preset-btn" data-region="western_ghats">
+            <span class="region-title">🌿 Western Ghats Escarpment</span>
+            <span class="region-sub">Mumbai ➔ Mahabaleshwar Ghat</span>
+          </button>
+          <button class="preset-btn" data-region="swiss_alps">
+            <span class="region-title">🏔️ Swiss Alps Pass</span>
+            <span class="region-sub">Geneva ➔ Zermatt Route</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Real-time Landslide Simulation Toggle -->
+      <section class="panel-card simulation-card">
+        <div class="card-header">
+          <i data-lucide="activity"></i>
+          <h2>Live Rerouting Simulation</h2>
+        </div>
+        <p class="card-desc">Simulate a sudden catastrophic slope failure along driver active path to test dynamic obstacle avoidance.</p>
+        
+        <div class="sim-controls">
+          <button id="btn-simulate" class="btn-primary danger-glow">
+            <i data-lucide="zap"></i>
+            <span>Simulate Sudden Landslide Event</span>
+          </button>
+          <button id="btn-reset-route" class="btn-secondary">
+            <i data-lucide="rotate-ccw"></i>
+            <span>Reset Primary Route</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Live Environmental Metrics & Slider Controls -->
+      <section class="panel-card">
+        <div class="card-header">
+          <i data-lucide="sliders"></i>
+          <h2>Environmental Metrics Evaluator</h2>
+        </div>
+        
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="slider-rain">24-Hour Cumulative Rainfall (mm)</label>
+            <span id="val-rain" class="slider-value">135 mm</span>
+          </div>
+          <input type="range" id="slider-rain" min="0" max="250" value="135" step="1">
+          <div class="slider-ticks">
+            <span>0 mm</span>
+            <span>60 mm</span>
+            <span>120 mm (High)</span>
+            <span>250 mm</span>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="slider-soil">Soil Saturation Index (SSI)</label>
+            <span id="val-soil" class="slider-value">0.88</span>
+          </div>
+          <input type="range" id="slider-soil" min="0.10" max="1.00" value="0.88" step="0.01">
+          <div class="slider-ticks">
+            <span>0.10 (Dry)</span>
+            <span>0.50</span>
+            <span>0.80 (Sat)</span>
+            <span>1.00</span>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="slider-slope">Slope Angle (Degrees)</label>
+            <span id="val-slope" class="slider-value">44°</span>
+          </div>
+          <input type="range" id="slider-slope" min="5" max="60" value="44" step="0.5">
+          <div class="slider-ticks">
+            <span>5°</span>
+            <span>25°</span>
+            <span>45° (Steep)</span>
+            <span>60°</span>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="btn-fetch-open-meteo" class="btn-outline">
+            <i data-lucide="cloud-rain"></i>
+            <span>Fetch Open-Meteo Live Data</span>
+          </button>
+          <button id="btn-recalculate-lhi" class="btn-secondary">
+            <i data-lucide="cpu"></i>
+            <span>Run XGBoost LHI Model</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Landslide Hazard Index (LHI) Telemetry Gauge -->
+      <section class="panel-card gauge-card">
+        <div class="card-header">
+          <i data-lucide="gauge"></i>
+          <h2>Landslide Hazard Index (LHI)</h2>
+        </div>
+        
+        <div class="gauge-display">
+          <div class="lhi-score-box">
+            <span id="lhi-val" class="lhi-score-text danger">0.864</span>
+            <span class="lhi-max">/ 1.00</span>
+          </div>
+          
+          <div class="lhi-bar-wrapper">
+            <div id="lhi-fill-bar" class="lhi-bar-fill danger-bg" style="width: 86.4%;"></div>
+            <div class="threshold-marker" style="left: 75%;" title="Danger Threshold (0.75)">
+              <span class="marker-label">0.75 Limit</span>
+            </div>
+          </div>
+          
+          <div class="gauge-status-row">
+            <div class="status-indicator">
+              <span class="label">Hazard Classification:</span>
+              <span id="lhi-class-text" class="value danger-text">CRITICAL / GEOFENCE ACTIVE</span>
+            </div>
+            <div class="status-indicator">
+              <span class="label">Inference Engine:</span>
+              <span id="lhi-method-text" class="value">XGBoost ML + Infinite Slope</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- Interactive Map Display & Layer Panel -->
+    <section class="map-container-panel">
+      
+      <!-- Map Header overlay bar -->
+      <div class="map-overlay-header">
+        <div class="legend-group">
+          <div class="legend-item">
+            <span class="legend-line primary-blocked"></span>
+            <span>Primary Blocked Route (Red Dashed)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-line safe-alternate"></span>
+            <span>Recalculated Safe Route (Green Solid)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-circle hazard-geofence"></span>
+            <span>Landslide Geofence (LHI > 0.75)</span>
+          </div>
+        </div>
+
+        <div class="map-controls-group">
+          <label class="toggle-control">
+            <input type="checkbox" id="chk-geofences" checked>
+            <span class="slider-toggle"></span>
+            <span class="toggle-label">Danger Geofences</span>
+          </label>
+          <label class="toggle-control">
+            <input type="checkbox" id="chk-heatmap" checked>
+            <span class="slider-toggle"></span>
+            <span class="toggle-label">Risk Heatmap</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Leaflet Map Container -->
+      <div id="map" class="leaflet-map-frame"></div>
+
+      <!-- Floating Map Info Badge -->
+      <div class="map-info-badge">
+        <i data-lucide="shield-check"></i>
+        <span>Dynamic Obstacle Avoidance Active • Shapely / GeoPandas Geofencing</span>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
