@@ -57,63 +57,65 @@ class SimulationRequest(BaseModel):
 
 # Regional Presets
 PRESET_REGIONS = {
-    "himalayas": {
-        "name": "Himalayas Highway (Rishikesh to Kedarnath)",
+    "badrinath": {
+        "name": "Himalayas Highway (Rishikesh to Badrinath)",
         "start": [78.2676, 30.0869],
-        "end": [79.0669, 30.7346],
-        "center": [30.4000, 78.6500],
+        "end": [79.4938, 30.7433],
+        "center": [30.4100, 78.8800],
         "hazard_sample": {
-            "latitude": 30.4120,
-            "longitude": 78.6850,
-            "slope_angle": 44.5,
-            "rainfall_24h": 142.0,
-            "soil_saturation": 0.88,
-            "name": "Rudraprayag Slope Sector 4"
+            "latitude": 30.5500,
+            "longitude": 79.1200,
+            "slope_angle": 46.5,
+            "rainfall_24h": 165.0,
+            "soil_saturation": 0.92,
+            "name": "Rudraprayag-Joshimath Landslide Corridor"
         }
     },
-    "pacific_nw": {
-        "name": "Pacific Northwest (Seattle to Mt Rainier Corridor)",
-        "start": [-122.3321, 47.6062],
-        "end": [-121.7604, 46.8523],
-        "center": [47.2000, -122.0000],
+    "sikkim_gangtok": {
+        "name": "North-East Pass (Siliguri to Gangtok NH10)",
+        "start": [88.4236, 26.7271],
+        "end": [88.6138, 27.3389],
+        "center": [27.0500, 88.5200],
         "hazard_sample": {
-            "latitude": 47.1850,
-            "longitude": -121.9850,
-            "slope_angle": 38.0,
-            "rainfall_24h": 115.0,
-            "soil_saturation": 0.82,
-            "name": "Carbon River Landslide Zone"
+            "latitude": 27.0850,
+            "longitude": 88.4750,
+            "slope_angle": 45.0,
+            "rainfall_24h": 175.0,
+            "soil_saturation": 0.94,
+            "name": "Teesta River Valley (NH10 Landslide Zone)"
         }
     },
-    "western_ghats": {
-        "name": "Western Ghats Pass (Mumbai to Mahabaleshwar)",
-        "start": [72.8777, 19.0760],
-        "end": [73.6559, 17.9237],
-        "center": [18.4000, 73.2500],
+    "arunachal_tawang": {
+        "name": "Arunachal Highway (Guwahati to Tawang)",
+        "start": [91.7362, 26.1445],
+        "end": [91.8594, 27.5861],
+        "center": [26.8500, 91.8000],
         "hazard_sample": {
-            "latitude": 18.3250,
-            "longitude": 73.2850,
-            "slope_angle": 42.0,
-            "rainfall_24h": 158.0,
-            "soil_saturation": 0.91,
-            "name": "Varandha Ghat Escarpment"
+            "latitude": 27.5050,
+            "longitude": 92.1000,
+            "slope_angle": 49.0,
+            "rainfall_24h": 160.0,
+            "soil_saturation": 0.89,
+            "name": "Sela Pass High Altitude Slope Sector"
         }
     },
-    "swiss_alps": {
-        "name": "Swiss Alps Route (Geneva to Zermatt)",
-        "start": [6.1432, 46.2044],
-        "end": [7.7491, 46.0207],
-        "center": [46.1200, 6.9500],
+    "meghalaya_sohra": {
+        "name": "Meghalaya Escarpment (Shillong to Cherrapunji)",
+        "start": [91.8933, 25.5788],
+        "end": [91.7323, 25.2702],
+        "center": [25.4200, 91.8100],
         "hazard_sample": {
-            "latitude": 46.1150,
-            "longitude": 6.9850,
-            "slope_angle": 48.0,
-            "rainfall_24h": 105.0,
-            "soil_saturation": 0.79,
-            "name": "Valais Steep Gorge Sector"
+            "latitude": 25.3550,
+            "longitude": 91.7850,
+            "slope_angle": 47.5,
+            "rainfall_24h": 210.0,
+            "soil_saturation": 0.96,
+            "name": "Duwan Sing Syiem Slope Escarpment"
         }
     }
 }
+  
+
 
 @app.get("/api/health")
 def health_check():
