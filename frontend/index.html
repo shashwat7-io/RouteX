@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Landslide Risk Detection Engine & Dynamic Routing Dashboard</title>
+  <title>RouteX • Landslide Hazard Detection & Dynamic Routing System</title>
+  <meta name="description" content="Real-time Landslide Hazard Index (LHI) detection, XGBoost AI prediction, Shapely geofence buffer generation, and autonomous detour routing.">
   
-  <!-- Google Fonts: Inter & Outfit -->
+  <!-- Google Fonts: Inter, Outfit, & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -22,47 +23,59 @@
 
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="dark-theme">
+<body class="light-theme">
   <!-- Top Navigation Header -->
   <header class="app-header">
     <div class="logo-container">
       <div class="logo-icon-wrapper">
-        <i data-lucide="mountain-snow" class="logo-icon"></i>
+        <i data-lucide="shield-alert" class="logo-icon"></i>
       </div>
-      <div>
-        <h1 class="app-title">TERRA-GUARD AI</h1>
-        <p class="app-subtitle">Landslide Hazard Detection & Autonomous Safe Rerouting System</p>
+      <div class="brand-text">
+        <h1 class="app-title">RouteX <span class="brand-badge">AI 2.0</span></h1>
+        <p class="app-subtitle">Landslide Hazard Detection & Dynamic Detour Engine</p>
       </div>
     </div>
     
     <div class="header-status-group">
+      <button id="btn-sos-guide" class="sos-header-btn" title="Open Landslide Emergency & Survival Protocol">
+        <i data-lucide="life-buoy"></i>
+        <span>SOS Guide</span>
+      </button>
+      <div id="offline-badge" class="status-badge offline-badge hidden">
+        <span class="pulse-dot amber"></span>
+        <span>Offline Cache Active</span>
+      </div>
+      <button id="btn-toggle-sidebar" class="mobile-toggle-btn" aria-label="Toggle Control Panel">
+        <i data-lucide="sliders"></i>
+        <span>Controls</span>
+      </button>
       <div class="status-badge live-api">
         <span class="pulse-dot green"></span>
-        <span id="api-status-text">Open-Meteo & XGBoost Engine Active</span>
+        <span id="api-status-text">XGBoost Engine Online</span>
       </div>
-      <div class="system-time" id="system-clock">21:05:30 UTC</div>
+      <div class="system-time" id="system-clock">--:--:-- UTC</div>
     </div>
   </header>
 
   <!-- Reroute Warning Banner (Hidden by Default) -->
-  <div id="alert-banner" class="alert-banner hidden">
+  <div id="alert-banner" class="alert-banner hidden" role="alert">
     <div class="alert-content">
       <div class="alert-icon-pulse">
         <i data-lucide="alert-triangle"></i>
       </div>
       <div class="alert-text">
         <h3 id="alert-title">CRITICAL HAZARD DETECTED ALONG ROUTE</h3>
-        <p id="alert-message">High Landslide Hazard Index (LHI > 0.75) detected. Automatic safe route recalculation engaged.</p>
+        <p id="alert-message">Landslide Hazard Index (LHI > 0.75) detected. Dynamic obstacle avoidance detour activated.</p>
       </div>
     </div>
     <div class="alert-metrics">
       <div class="metric-pill">
-        <span class="label">Original Route:</span>
+        <span class="label">Blocked Route:</span>
         <span id="alert-orig-dist" class="val blocked">0 km</span>
       </div>
       <div class="metric-arrow">➔</div>
       <div class="metric-pill">
-        <span class="label">Safe Bypass Route:</span>
+        <span class="label">Safe Detour:</span>
         <span id="alert-safe-dist" class="val safe">0 km</span>
       </div>
       <div class="metric-pill">
@@ -77,70 +90,47 @@
     <!-- Sidebar Control & Telemetry Panel -->
     <aside class="sidebar-panel">
       
-    <!-- Preset Region Selector -->
-    <section class="panel-card">
-      <div class="card-header">
-        <i data-lucide="globe"></i>
-        <h2>Geospatial Region Presets</h2>
-      <div class="preset-buttons">
+      <!-- Preset Region Selector -->
+      <section class="panel-card">
+        <div class="card-header">
+          <i data-lucide="map-pin"></i>
+          <h2>Geospatial Region Corridors</h2>
+        </div>
+        <div class="preset-buttons">
+          <button class="preset-btn active" data-region="badrinath" id="preset-badrinath">
+            <span class="region-title">🏔️ Rishikesh ➔ Badrinath</span>
+            <span class="region-sub">NH58 Himalayas Highway Pass</span>
+          </button>
 
-     <button class="preset-btn active" data-region="badrinath">
-          <span class="region-title">
-            🏔️ Rishikesh ➔ Badrinath
-          </span>
+          <button class="preset-btn" data-region="sikkim_gangtok" id="preset-gangtok">
+            <span class="region-title">🌿 Siliguri ➔ Gangtok</span>
+            <span class="region-sub">NH10 Teesta River Valley Pass</span>
+          </button>
 
-          <span class="region-sub">
-            NH58 Mountain Highway Corridor
-          </span>
-      </button>
+          <button class="preset-btn" data-region="arunachal_tawang" id="preset-tawang">
+            <span class="region-title">🏔️ Guwahati ➔ Tawang</span>
+            <span class="region-sub">Sela Pass High Altitude Sector</span>
+          </button>
 
+          <button class="preset-btn" data-region="meghalaya_sohra" id="preset-sohra">
+            <span class="region-title">🌧️ Shillong ➔ Cherrapunji</span>
+            <span class="region-sub">Meghalaya Plateau Escarpment</span>
+          </button>
+        </div>
+      </section>
 
-      <button class="preset-btn" data-region="sikkim_gangtok">
-        <span class="region-title">
-          🌿 Siliguri ➔ Gangtok (Sikkim)
-        </span>
-        <span class="region-sub">
-          
-          NH10 Teesta River Valley Pass
-        </span>
-      </button>
-
-
-      <button class="preset-btn" data-region="arunachal_tawang">
-        
-        <span class="region-title">
-          🏔️ Guwahati ➔ Tawang (Arunachal)
-        </span>
-
-        <span class="region-sub">
-            Sela Pass High Altitude Highway
-        </span>
-      </button>
-
-
-      <button class="preset-btn" data-region="meghalaya_sohra">
-        <span class="region-title">
-          🌧️ Shillong ➔ Cherrapunji
-        </span>
-
-        <span class="region-sub">
-          Meghalaya Plateau Escarpment
-        </span>
-      </button>
-
-    </div>
-      <!-- Real-time Landslide Simulation Toggle -->
+      <!-- Real-time Landslide Simulation Card -->
       <section class="panel-card simulation-card">
         <div class="card-header">
-          <i data-lucide="activity"></i>
+          <i data-lucide="zap"></i>
           <h2>Live Rerouting Simulation</h2>
         </div>
-        <p class="card-desc">Simulate a sudden catastrophic slope failure along driver active path to test dynamic obstacle avoidance.</p>
+        <p class="card-desc">Simulate a sudden catastrophic slope failure along active path to test dynamic obstacle avoidance geofencing.</p>
         
         <div class="sim-controls">
           <button id="btn-simulate" class="btn-primary danger-glow">
-            <i data-lucide="zap"></i>
-            <span>Simulate Sudden Landslide Event</span>
+            <i data-lucide="alert-circle"></i>
+            <span>Simulate Slope Failure Event</span>
           </button>
           <button id="btn-reset-route" class="btn-secondary">
             <i data-lucide="rotate-ccw"></i>
@@ -149,23 +139,23 @@
         </div>
       </section>
 
-      <!-- Live Environmental Metrics & Slider Controls -->
+      <!-- Live Environmental Metrics Evaluator -->
       <section class="panel-card">
         <div class="card-header">
           <i data-lucide="sliders"></i>
-          <h2>Environmental Metrics Evaluator</h2>
+          <h2>Geotechnical Evaluator</h2>
         </div>
         
         <div class="slider-group">
           <div class="slider-header">
-            <label for="slider-rain">24-Hour Cumulative Rainfall (mm)</label>
+            <label for="slider-rain">24-Hour Rainfall</label>
             <span id="val-rain" class="slider-value">135 mm</span>
           </div>
           <input type="range" id="slider-rain" min="0" max="250" value="135" step="1">
           <div class="slider-ticks">
             <span>0 mm</span>
             <span>60 mm</span>
-            <span>120 mm (High)</span>
+            <span>120 mm</span>
             <span>250 mm</span>
           </div>
         </div>
@@ -186,7 +176,7 @@
 
         <div class="slider-group">
           <div class="slider-header">
-            <label for="slider-slope">Slope Angle (Degrees)</label>
+            <label for="slider-slope">Slope Angle</label>
             <span id="val-slope" class="slider-value">44°</span>
           </div>
           <input type="range" id="slider-slope" min="5" max="60" value="44" step="0.5">
@@ -201,19 +191,19 @@
         <div class="action-buttons">
           <button id="btn-fetch-open-meteo" class="btn-outline">
             <i data-lucide="cloud-rain"></i>
-            <span>Fetch Open-Meteo Live Data</span>
+            <span>Live Weather Data</span>
           </button>
           <button id="btn-recalculate-lhi" class="btn-secondary">
             <i data-lucide="cpu"></i>
-            <span>Run XGBoost LHI Model</span>
+            <span>Evaluate LHI</span>
           </button>
         </div>
       </section>
 
-      <!-- Landslide Hazard Index (LHI) Telemetry Gauge -->
+      <!-- Landslide Hazard Index Gauge -->
       <section class="panel-card gauge-card">
         <div class="card-header">
-          <i data-lucide="gauge"></i>
+          <i data-lucide="activity"></i>
           <h2>Landslide Hazard Index (LHI)</h2>
         </div>
         
@@ -225,7 +215,7 @@
           
           <div class="lhi-bar-wrapper">
             <div id="lhi-fill-bar" class="lhi-bar-fill danger-bg" style="width: 86.4%;"></div>
-            <div class="threshold-marker" style="left: 75%;" title="Danger Threshold (0.75)">
+            <div class="threshold-marker" style="left: 75%;" title="Danger Limit (0.75)">
               <span class="marker-label">0.75 Limit</span>
             </div>
           </div>
@@ -245,23 +235,22 @@
 
     </aside>
 
-    <!-- Interactive Map Display & Layer Panel -->
+    <!-- Interactive Map Display & Control Panel -->
     <section class="map-container-panel">
-      
-      <!-- Map Header overlay bar -->
+      <!-- Map Header Legend Bar -->
       <div class="map-overlay-header">
         <div class="legend-group">
           <div class="legend-item">
             <span class="legend-line primary-blocked"></span>
-            <span>Primary Blocked Route (Red Dashed)</span>
+            <span>Blocked Route (Red Dashed)</span>
           </div>
           <div class="legend-item">
             <span class="legend-line safe-alternate"></span>
-            <span>Recalculated Safe Route (Green Solid)</span>
+            <span>Safe Detour Route (Green Solid)</span>
           </div>
           <div class="legend-item">
             <span class="legend-circle hazard-geofence"></span>
-            <span>Landslide Geofence (LHI > 0.75)</span>
+            <span>Hazard Geofence Polygon</span>
           </div>
         </div>
 
@@ -285,12 +274,147 @@
       <!-- Floating Map Info Badge -->
       <div class="map-info-badge">
         <i data-lucide="shield-check"></i>
-        <span>Dynamic Obstacle Avoidance Active • Shapely / GeoPandas Geofencing</span>
+        <span>Dynamic Obstacle Avoidance • GeoPandas Buffer System Active</span>
       </div>
     </section>
 
   </main>
 
+  <!-- SOS Landslide Emergency Survival & Offline Evacuation Modal -->
+  <div id="sos-modal" class="sos-modal hidden">
+    <div class="sos-modal-content">
+      <div class="sos-modal-header">
+        <div class="sos-header-title">
+          <i data-lucide="shield-alert"></i>
+          <div>
+            <h2>Landslide Emergency & Survival Guide</h2>
+            <p>Offline Protocol • Trapped Vehicle Evacuation & GPS Telemetry</p>
+          </div>
+        </div>
+        <button id="btn-close-sos" class="sos-close-btn" aria-label="Close Emergency Guide">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="sos-modal-body">
+        <!-- Live GPS Offline Telemetry Pinpoint -->
+        <div class="sos-card gps-card">
+          <div class="gps-card-header">
+            <i data-lucide="navigation"></i>
+            <h3>Your Emergency GPS Coordinates (Offline Cached)</h3>
+          </div>
+          <div class="gps-coordinates-box">
+            <span id="sos-gps-text">Fetching GPS Satellite Fix...</span>
+            <button id="btn-copy-gps" class="btn-copy-gps" title="Copy GPS Coordinates to Clipboard">
+              <i data-lucide="copy"></i>
+              <span>Copy Coordinates</span>
+            </button>
+          </div>
+          <p class="gps-sub">Use satellite messaging or SMS to transmit these exact coordinates to emergency NDRF rescue teams.</p>
+        </div>
+
+        <!-- 4 Step Survival Rules -->
+        <div class="sos-guide-grid">
+          <div class="sos-rule-card danger">
+            <div class="rule-badge">STEP 1</div>
+            <h4>🚗 If Trapped in a Vehicle</h4>
+            <ul>
+              <li><b>Do NOT stay in path:</b> If debris flow or mudflow approaches, exit vehicle immediately.</li>
+              <li><b>Move Perpendicular:</b> Run sideways (perpendicular) to the slide direction, toward high stable ground.</li>
+              <li><b>If trapped inside car:</b> Roll into a tight fetal position, cover your head, and brace against car floor frame.</li>
+            </ul>
+          </div>
+
+          <div class="sos-rule-card warning">
+            <div class="rule-badge">STEP 2</div>
+            <h4>🏃 If Trapped On Foot Outdoors</h4>
+            <ul>
+              <li><b>Never run downhill:</b> Landslide debris moves faster than human sprinting speed (up to 50 km/h).</li>
+              <li><b>Seek Solid Cover:</b> Move behind large rock formations or thick trees out of the mud channel.</li>
+              <li><b>Protection Pose:</b> If falling rocks approach, curl into a ball and shield your skull with your arms/backpack.</li>
+            </ul>
+          </div>
+
+          <div class="sos-rule-card info">
+            <div class="rule-badge">STEP 3</div>
+            <h4>📻 Post-Slide Survival Rules</h4>
+            <ul>
+              <li><b>Watch for Secondary Slides:</b> Water saturation often triggers secondary slope failures minutes later.</li>
+              <li><b>Check for Gas/Power Lines:</b> Stay clear of fallen power lines and ruptured gas lines in mud.</li>
+              <li><b>Signal Rescuers:</b> Use a whistle, mirror, flash, or heavy rhythmic drumming on metal to signal search dogs.</li>
+            </ul>
+          </div>
+
+          <div class="sos-rule-card success">
+            <div class="rule-badge">STEP 4</div>
+            <h4>📞 Emergency Contact Directory (India / Mountain Highways)</h4>
+            <div class="contact-list">
+              <div class="contact-item"><span>NDRF Disaster Control:</span> <strong>1078 / 1070</strong></div>
+              <div class="contact-item"><span>National Emergency Helpline:</span> <strong>112</strong></div>
+              <div class="contact-item"><span>State Disaster Management (SDMA):</span> <strong>1077</strong></div>
+              <div class="contact-item"><span>Medical Emergency / Ambulance:</span> <strong>108 / 102</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Offline Cache Status Indicator -->
+        <div class="sos-cache-banner">
+          <i data-lucide="check-circle-2"></i>
+          <span><b>Offline Mode Enabled:</b> Route maps, regional presets, and this emergency guide are fully cached in browser storage.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Chatbot Toggle Button -->
+  <button id="btn-open-chat" class="chat-fab" aria-label="Open AI Safety Assistant">
+    <i data-lucide="bot"></i>
+    <span class="chat-fab-pulse"></span>
+  </button>
+
+  <!-- AI Chatbot Modal Drawer Widget -->
+  <div id="chat-widget" class="chat-widget hidden">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <div class="chat-avatar">
+          <i data-lucide="sparkles"></i>
+        </div>
+        <div>
+          <h3 class="chat-title">RouteX AI Advisor</h3>
+          <span class="chat-hf-badge">🤗 Hugging Face LLM</span>
+        </div>
+      </div>
+      <button id="btn-close-chat" class="chat-close-btn" aria-label="Close Chat">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <!-- Chat Messages Scroll Thread -->
+    <div id="chat-messages" class="chat-messages">
+      <div class="chat-msg bot">
+        <div class="msg-bubble">
+          👋 Hello! I am your <b>RouteX AI Safety Advisor</b> powered by Hugging Face models. Ask me about Landslide Hazard Index (LHI), rainfall thresholds, or dynamic geofencing!
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Prompt Chips -->
+    <div class="chat-chips">
+      <button class="chip-btn" data-prompt="Assess Rishikesh-Badrinath landslide risk">🏔️ Badrinath Risk</button>
+      <button class="chip-btn" data-prompt="Why is 24-hour rainfall critical for slope failure?">🌧️ Rainfall Risk</button>
+      <button class="chip-btn" data-prompt="How does dynamic geofence rerouting work?">🛡️ Rerouting</button>
+    </div>
+
+    <!-- Chat Input Form -->
+    <form id="chat-form" class="chat-input-area">
+      <input type="text" id="chat-input-field" placeholder="Ask RouteX AI Advisor..." required autocomplete="off" />
+      <button type="submit" id="chat-send-btn" class="chat-send-btn" aria-label="Send Message">
+        <i data-lucide="send"></i>
+      </button>
+    </form>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
+
